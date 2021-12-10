@@ -1,110 +1,127 @@
-import Head from "next/head";
-import { useState, useEffect } from "react";
-import {
-  createMarkup,
-  tranformInterchanges,
-  showBotTyping,
-  getBotAnswer,
-  fetchQuery,
-} from "../utils/helper";
+import { useEffect, useState } from "react";
 
-export default function Home({ interchanges }) {
-  
-  const [userQuestion, setUserQuestion] = useState("");
-  const [allow, setAllow] = useState(false);
-  const [interchange, setInterchange] = useState([]);
+const allMessages = [
+  { id: 1, que: "What are the skills you have", ans: "Dummy skills" },
+  {
+    id: 2,
+    que: "What are the product you have",
+    ans: "Dummy products",
+  },
+  { id: 3, que: "What are the fruits you have", ans: "Dummy Fruits" },
+];
+export default function Home() {
+  const [messages, setMessages] = useState([]);
+  const [que, setQue] = useState([]);
+  const [isTyping, setIsTyping] = useState(true);
+  const [isAfterTyping, setIsAfterTyping] = useState(false);
 
-  useEffect(async () => {
-    await showBotTyping(setInterchange, [], setAllow);
-    setInterchange([
-      {
-        owner: false,
-        text: tranformInterchanges(interchanges, true),
-      },
-    ]);
-  }, [interchanges]);
+  useEffect(() => {
+    setTimeout(() => {
+      setIsTyping(false);
+    }, 2000);
+  }, []);
 
-  const handleSubmit = async (e) => {
+  const onSubmitHandler = (e) => {
     e.preventDefault();
-    if (!userQuestion || !allow) return;
-    const uQ = userQuestion;
-    const newInterchange = [
-      ...interchange,
-      {
-        owner: true,
-        text: userQuestion,
-      },
-    ];
-    setInterchange(newInterchange);
-    setUserQuestion("");
-    setAllow(false);
-    getBotAnswer(interchanges, setInterchange, uQ, newInterchange, setAllow);
+
+    if (que === "") {
+      return;
+    }
+    setMessages((prev) => [
+      ...prev,
+      { id: messages.length + 1, name: que, owner: "user" },
+    ]);
+    setIsAfterTyping(true);
+    document
+      .getElementById("scrollTo")
+      .scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => {
+      const ans = allMessages.find((msg) =>
+        msg.que.toLocaleLowerCase().includes(que)
+      );
+      let findAns;
+      if (ans) {
+        findAns = { id: messages.length + 1, name: ans.ans };
+      } else {
+        findAns = { id: messages.length + 1, name: "No answer found" };
+      }
+      setMessages((prev) => [...prev, findAns]);
+      setQue("");
+      document
+        .getElementById("scrollTo")
+        .scrollIntoView({ behavior: "smooth", block: "start" });
+
+      setIsAfterTyping(false);
+
+      
+    }, 1000);
   };
+
   return (
-    <div className="flex flex-col font-mono items-center justify-center min-h-screen">
-      <Head>
-        <title>ChatBot Assistant</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <form className="flex flex-col w-full flex-1" onSubmit={handleSubmit}>
-        <header className="flex w-full h-24 fixed bg-black border-b">
-          <span className="flex items-center text-white font-bold text-lg p-2">
-            {" "}
-            Bot Assistant
-          </span>
-        </header>
+    <div
+      style={{
+        height: "100vh",
+        padding: "10px",
+        color: "white",
+      }}
+    >
+      <h1 style={{ margin: "0" }}>Welcome to the chatbot</h1>
+
+      {isTyping
+        ? "Typing ..."
+        : allMessages.map((msg) => (
+            <p key={msg.id}>
+              {msg.id}. {msg.que}
+            </p>
+          ))}
+
+      <hr style={{ height: "5px", color: "white" }} />
+
+      {messages.map((m, i) => (
         <div
-          className="flex flex-col mt-24 bg-gray-200  overflow-scroll p-2 w-full"
-          style={{ height: "80vh" }}
+          key={i}
+          style={{
+            display: "flex",
+            width: "100%",
+            justifyContent: m.owner === "user" ? "flex-end" : "flex-start",
+          }}
         >
-          {interchange.map((chat, i) =>
-            chat.owner ? (
-              <div key={i} className="user flex flex-row my-2 w-full p-2">
-                <span className="w-2/3"></span>
-                <span className="w-1/3 bg-gray-100 p-2 rounded">
-                  {chat.text}
-                </span>
-              </div>
-            ) : (
-              <div
-                key={i}
-                className="bot my-2 bg-gray-100 w-1/2 lg:w-1/3  p-2 rounded"
-              >
-                <span dangerouslySetInnerHTML={createMarkup(chat.text)} />
-              </div>
-            )
-          )}
-          <div id="scrollTo"></div>
-        </div>
-        <footer className="flex flex-row justify-between items-center p-1 h-5/6  w-full -bottom-5">
-          <div className="flex flex-row justify-between flex-1 bg-white w-full">
-            <input
-              className=" bg-gray-200 w-2/3 p-2 "
-              placeholder="Type a message"
-              value={userQuestion}
-              onChange={(e) => {
-                setUserQuestion(e.target.value);
-              }}
-            />
-            <button
-              className=" bg-black p-2 ml-2 w-1/3  text-white"
-              type="submit"
-            >
-              {" "}
-              Send
-            </button>
+          <div
+            style={{
+              backgroundColor: m.owner === "user" ? "green" : "orange",
+              padding: "3px",
+              width: "40%",
+              borderRadius: "10px",
+              marginBottom: "10px",
+            }}
+          >
+            <p style={{margin:'2px'}}> {m.name} </p>
           </div>
-        </footer>
+        </div>
+      ))}
+
+      {isAfterTyping && "Typing..."}
+
+      <div id="scrollTo" style={{ height: "70px" }}></div>
+
+      <form
+        onSubmit={onSubmitHandler}
+        style={{
+          display: "flex",
+          margin: "auto",
+          width: "98%",
+          position: "fixed",
+          bottom: "0",
+        }}
+      >
+        <input
+          value={que}
+          style={{ flex: 1, width: "100%", height: "30px" }}
+          onChange={(e) => setQue(e.target.value)}
+          type="text"
+        />
+        <button type="submit"> {`>`} </button>
       </form>
     </div>
   );
-}
-
-export async function getStaticProps() {
-  const interchanges = await fetchQuery("interchanges");
-  return {
-    props: {
-      interchanges,
-    },
-  };
 }
